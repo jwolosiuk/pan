@@ -2,18 +2,62 @@ import random
 import math
 from collections import Counter
 
+from agents.utils import human_readable_game_state
+
 class Pan:
     CARDS = [9, 10, 'J', 'Q', 'K', 'A']
     STARTING_CARD = '9K'
     values = {v: i + 1 for i, v in enumerate(CARDS)}
 
-    def __init__(self, nr_of_players=2):
+    def __init__(self, initial_state=None, nr_of_players=2):
         self.NR_OF_PLAYERS = nr_of_players
-        self.restart()
+        self.HAND_SIZE = math.ceil(len(self.CARDS)*4/self.NR_OF_PLAYERS)
+
+        if initial_state is None:
+            self.restart()
+        else:
+            self.start_from_state(initial_state)
+
+
+
+    def play(self, players=None, debug=False):
+        if players is None:
+            raise Exception("Pass players")
+        state = self.state()
+        while type(state) is not int:
+            if debug:
+                human_readable_game_state(*state)
+            turn = state[0]
+            player = players[turn]
+            move = player.move(state)
+            if debug:
+                print("Player",turn,'-', player.__class__.__name__ ,"moves",move)
+            state = self.step(move)
+        if debug:
+            print("Won player ", state, '-', player.__class__.__name__ )
+            print("Nr of turns", self.turns_played)
+        return state
+
+    def start_from_state(self, initial_state):
+        self.clean_game()
+
+        turn, hands = initial_state
+        self._turn = turn
+
+        stack = sum([[self.CARDS[i]]*v for i,v in enumerate(hands[6:12])], [])
+        self.stack = stack
+
+        hands = [hands[:6], hands[12:]]
+        hands = [Counter({k: v for k, v in zip(self.CARDS, h)}) for h in hands]
+        if turn != 0:
+            hands.reverse()
+        self.hands = hands
+        return self.state()
 
     def restart(self):
-        self._deck = self.CARDS.copy()*4
-        self.HAND_SIZE = math.ceil(len(self._deck)/self.NR_OF_PLAYERS)
+        self.clean_game()
+
+        self._deck = self.CARDS.copy() * 4
         self._deck[0] = self.STARTING_CARD  # 9 kier, zeby wylosowac pierwszego gracza i wgle
         random.shuffle(self._deck)
         self.hands = [self._deck[i:i+self.HAND_SIZE] for i in range(0, len(self._deck), self.HAND_SIZE)]
@@ -27,12 +71,13 @@ class Pan:
                 break
 
         self.hands = [Counter(hand) for hand in self.hands]
-
-        self.stack = []
         self._turn = self.rotate_next(self.first_player)
+        return self.state()
+
+    def clean_game(self):
+        self.stack = []
         self.turns_played = 0
         self.remaining_players = self.NR_OF_PLAYERS
-        return self.state()
 
     @property
     def turn(self):
@@ -62,7 +107,7 @@ class Pan:
         endgame = self.end_turn()
         if endgame is not None:
             # koniec gry
-            return 'T'
+            return endgame
 
         return self.state()
 
@@ -72,11 +117,15 @@ class Pan:
         possible_actions_mask = self.calc_possible_actions_mask(hand)
 
         # game_state = p1 hand counters + stack counters [+ p2 stack counters]
-        seen = self._hand_to_tuple(Counter(self.stack)+hand)
-        rest = tuple(4 - s + (-1 if i == 0 else 0) for i, s in enumerate(seen))
+        rest = self._hand_to_tuple(self.hands[next_turn])
+        #seen = self._hand_to_tuple(Counter(self.stack)+hand)
+        #rest = tuple(4 - s + (-1 if i == 0 else 0) for i, s in enumerate(seen))
         state = self._hand_to_tuple(hand) + \
                 self._hand_to_tuple(self.stack) + \
                 rest
+        # print(state)
+        # print(sum(state))
+        # assert sum(state) == 23
         return self.turn, state, possible_actions_mask
 
     def calc_possible_actions_mask(self, hand):
@@ -107,22 +156,25 @@ class Pan:
         return (i+1) % self.NR_OF_PLAYERS
 
     def end_turn(self):
-        assert all([self.values[a] >= self.values[b] for a,b in zip(self.stack[1:], self.stack)])
+        # assert all([self.values[a] >= self.values[b] for a,b in zip(self.stack[1:], self.stack)])
         self.turns_played += 1
         last_turn = self._turn
         next_turn = self.rotate_next(self._turn)
         hand = self.hands[self._turn]
         if sum(hand.values()) == 0:
-            print('Player '+str(self._turn)+ ' ended game')
+            #print('Player '+str(self._turn)+ ' ended game')
             self.remaining_players -= 1
+            return self._turn
 
         if self.remaining_players <= 1:
+            raise RuntimeError  # shouldnt be here
             return 'T'
 
         while sum(self.hands[next_turn].values()) == 0:
             next_turn = self.rotate_next(next_turn)
         if next_turn == last_turn:
             print('wow, the seccond if ends the game')
+            raise RuntimeError  # shouldnt be here
             return 'T'
         self._turn = next_turn
 

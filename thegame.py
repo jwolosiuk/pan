@@ -4,6 +4,8 @@ from collections import Counter
 
 from agents.utils import human_readable_game_state
 
+MAX_TURNS = 200
+
 class Pan:
     CARDS = [9, 10, 'J', 'Q', 'K', 'A']
     STARTING_CARD = '9K'
@@ -18,13 +20,11 @@ class Pan:
         else:
             self.start_from_state(initial_state)
 
-
-
     def play(self, players=None, debug=False):
         if players is None:
             raise Exception("Pass players")
         state = self.state()
-        while type(state) is not int:
+        while type(state) is tuple:
             if debug:
                 human_readable_game_state(*state)
             turn = state[0]
@@ -41,7 +41,7 @@ class Pan:
     def start_from_state(self, initial_state):
         self.clean_game()
 
-        turn, hands = initial_state
+        turn, hands = initial_state[0:2]
         self._turn = turn
 
         stack = sum([[self.CARDS[i]]*v for i,v in enumerate(hands[6:12])], [])
@@ -114,10 +114,19 @@ class Pan:
     def state(self):
         hand = self.hands[self.turn]
         next_turn = self.rotate_next(self.turn)
+        next_hand = self.hands[next_turn]
+
+        if sum(hand.values()) == 0:
+            return self.turn
+        if sum(next_hand.values()) == 0:
+            return next_turn
+        if self.turn > MAX_TURNS:
+            return 'R'
+
         possible_actions_mask = self.calc_possible_actions_mask(hand)
 
         # game_state = p1 hand counters + stack counters [+ p2 stack counters]
-        rest = self._hand_to_tuple(self.hands[next_turn])
+        rest = self._hand_to_tuple(next_hand)
         #seen = self._hand_to_tuple(Counter(self.stack)+hand)
         #rest = tuple(4 - s + (-1 if i == 0 else 0) for i, s in enumerate(seen))
         state = self._hand_to_tuple(hand) + \

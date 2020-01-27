@@ -4,7 +4,7 @@ from collections import Counter
 
 from agents.utils import human_readable_game_state
 
-MAX_TURNS = 200
+MAX_TURNS = 50
 
 class Pan:
     CARDS = [9, 10, 'J', 'Q', 'K', 'A']
@@ -47,11 +47,13 @@ class Pan:
         stack = sum([[self.CARDS[i]]*v for i,v in enumerate(hands[6:12])], [])
         self.stack = stack
 
-        hands = [hands[:6], hands[12:]]
+        hands = [hands[:6], hands[-6:]]
         hands = [Counter({k: v for k, v in zip(self.CARDS, h)}) for h in hands]
         if turn != 0:
             hands.reverse()
         self.hands = hands
+        #print('startState', self.hands)
+        #print('startState', self.state())
         return self.state()
 
     def restart(self):
@@ -89,6 +91,11 @@ class Pan:
         hand = self.hands[self.turn]
         possible_actions_mask = self.calc_possible_actions_mask(hand)
         if possible_actions_mask[action] is False:
+            print('cant do', self.state())
+            print('cant do', hand)
+            print('cant do', self.turn)
+            print('cant do', possible_actions_mask)
+            print('cant do action', action)
             raise EnvironmentError('Cant do the action')
         else:
             # DO THE ACTION
@@ -120,7 +127,7 @@ class Pan:
             return self.turn
         if sum(next_hand.values()) == 0:
             return next_turn
-        if self.turn > MAX_TURNS:
+        if self.turns_played > MAX_TURNS:
             return 'R'
 
         possible_actions_mask = self.calc_possible_actions_mask(hand)
@@ -134,7 +141,7 @@ class Pan:
                 rest
         # print(state)
         # print(sum(state))
-        # assert sum(state) == 23
+        assert sum(state) == 23
         return self.turn, state, possible_actions_mask
 
     def calc_possible_actions_mask(self, hand):

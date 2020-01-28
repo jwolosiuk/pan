@@ -1,6 +1,9 @@
-CARDS = [9, 10, 'J', 'Q', 'K', 'A']
+from collections import Counter
 
-def human_readable_game_state(turn, state, possible):
+from thegame import CARDS, VALUES
+
+def human_readable_game_state(turn, state):
+    possible = calc_possible_actions_mask(state)
     print("Turn of Player", turn)
     my_hand = state[:6]
     stack = state[6:12]
@@ -22,11 +25,11 @@ def human_readable_game_state(turn, state, possible):
             print(i+1,': Put', nr, card,' on top')
 
 def state_to_moves(state):
-    pos = state[-1]
+    pos = calc_possible_actions_mask(state[1])
     return [i for i,v in enumerate(pos) if v == True]
 
 def state_to_lol_cards_moves(state):
-    pos = state[-1]
+    pos = calc_possible_actions_mask(state[1])
     lol = [[], [], [], [], [], []]
     for action, v in enumerate(pos[1:], 1):
         card_idx, nr_idx = (action-1) // 3, (action-1) % 3
@@ -54,3 +57,21 @@ def lowest_i_have(state):
     m = min([i for i,v in enumerate(my_hand) if v!=0])
     #print('lowest', m)
     return m
+
+def calc_possible_actions_mask(state):
+    hand = state[:6]
+    stack = state[6:12]
+    hand = sum([[c] * hand[i] for i, c in enumerate(CARDS)], [])
+    stack = (sum([[c] * stack[i] for i, c in enumerate(CARDS)], []))
+    hand_counter = Counter(hand)
+
+    # actions = ['take 3'] + ['play 1 x', 'play 3 x', 'play 4 x'] for x in cards
+    possible_actions_mask = []
+    possible_actions_mask.append(len(stack) > 0)
+    last_on_stack = VALUES[stack[-1]] if len(stack) > 0 else 1
+    for card in CARDS:
+        l = hand_counter[card]
+        possible_actions_mask.append(l >= 1 and VALUES[card] >= last_on_stack)
+        possible_actions_mask.append(l >= 3 and VALUES[card] >= last_on_stack)
+        possible_actions_mask.append(l >= 4 and VALUES[card] >= last_on_stack)
+    return tuple(possible_actions_mask)

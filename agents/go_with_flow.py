@@ -1,4 +1,4 @@
-from .utils import state_to_lol_cards_moves, have_debt
+from .utils import state_to_lol_cards_moves, have_debt, calc_possible_actions_mask
 
 """
 All flow agents willingfully exchange cards, even if they could predict that they will lose.
@@ -10,7 +10,7 @@ class FlowAgent:
     """
 
     def move(self, state):
-        pos = state[-1]
+        pos = calc_possible_actions_mask(state[1])
         moves = [i for i, v in enumerate(pos) if v is True]
         if len(moves) == 1:
             return moves[0]
@@ -29,7 +29,7 @@ class FlowAgentDebtAttack:
     """
 
     def move(self, state):
-        pos = state[-1]
+        pos = calc_possible_actions_mask(state[1])
         moves = [i for i, v in enumerate(pos) if v is True]
         if len(moves) == 1:
             return moves[0]
@@ -48,7 +48,7 @@ class FlowAgentDebtTake:
     """
 
     def move(self, state):
-        pos = state[-1]
+        pos = calc_possible_actions_mask(state[1])
         moves = [i for i, v in enumerate(pos) if v is True]
         if len(moves) == 1:
             return moves[0]

@@ -1,7 +1,7 @@
 from thegame import Pan
 from agents import HumanAgent, RandomAgent, FlowAgent, FlowAgentDebtAttack, FlowAgentDebtTake
 from mcts_agents import SimpleMCTSAgent
-from mcts_agents.external_mcts import MCTSAgent
+from mcts_agents.external_mcts import MCTSAgent, MCTSAgentFlow
 
 NR_OF_PLAYERS = 2
 pan = Pan(nr_of_players=NR_OF_PLAYERS)
@@ -28,7 +28,7 @@ for i in range(100):
 """
 
 
-automatic_agents = [RandomAgent, FlowAgent, FlowAgentDebtTake, FlowAgentDebtAttack, SimpleMCTSAgent, MCTSAgent, lambda: MCTSAgent(time_limit=10000)]
+automatic_agents = [RandomAgent, FlowAgent, FlowAgentDebtTake, FlowAgentDebtAttack, SimpleMCTSAgent, MCTSAgent, MCTSAgentFlow, lambda: MCTSAgent(time_limit=10000)]
 
 nr = len(automatic_agents)
 p1w = [[0 for i in range(nr)] for i in range(nr)]

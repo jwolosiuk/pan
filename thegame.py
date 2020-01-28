@@ -2,18 +2,20 @@ import random
 import math
 from collections import Counter
 
-from agents.utils import human_readable_game_state
-
 MAX_TURNS = 50
+TIE_VALUE = -0.9
+CARDS = [9, 10, 'J', 'Q', 'K', 'A']
+STARTING_CARD = '9K'
+VALUES = {v: i + 1 for i, v in enumerate(CARDS)}
+
+from agents.utils import human_readable_game_state, calc_possible_actions_mask
 
 class Pan:
-    CARDS = [9, 10, 'J', 'Q', 'K', 'A']
-    STARTING_CARD = '9K'
-    values = {v: i + 1 for i, v in enumerate(CARDS)}
+
 
     def __init__(self, initial_state=None, nr_of_players=2):
         self.NR_OF_PLAYERS = nr_of_players
-        self.HAND_SIZE = math.ceil(len(self.CARDS)*4/self.NR_OF_PLAYERS)
+        self.HAND_SIZE = math.ceil(len(CARDS)*4/self.NR_OF_PLAYERS)
 
         if initial_state is None:
             self.restart()
@@ -44,32 +46,33 @@ class Pan:
         turn, hands = initial_state[0:2]
         self._turn = turn
 
-        stack = sum([[self.CARDS[i]]*v for i,v in enumerate(hands[6:12])], [])
+        stack = sum([[CARDS[i]]*v for i,v in enumerate(hands[6:12])], [])
         self.stack = stack
 
         hands = [hands[:6], hands[-6:]]
-        hands = [Counter({k: v for k, v in zip(self.CARDS, h)}) for h in hands]
+        hands = [Counter({k: v for k, v in zip(CARDS, h)}) for h in hands]
         if turn != 0:
             hands.reverse()
         self.hands = hands
         #print('startState', self.hands)
         #print('startState', self.state())
+        self.turns_played = initial_state[-1]
         return self.state()
 
     def restart(self):
         self.clean_game()
 
-        self._deck = self.CARDS.copy() * 4
-        self._deck[0] = self.STARTING_CARD  # 9 kier, zeby wylosowac pierwszego gracza i wgle
+        self._deck = CARDS.copy() * 4
+        self._deck[0] = STARTING_CARD  # 9 kier, zeby wylosowac pierwszego gracza i wgle
         random.shuffle(self._deck)
         self.hands = [self._deck[i:i+self.HAND_SIZE] for i in range(0, len(self._deck), self.HAND_SIZE)]
         random.shuffle(self.hands)
 
         self.first_player = None
         for pi, hand in enumerate(self.hands):
-            if self.STARTING_CARD in hand:
+            if STARTING_CARD in hand:
                 self.first_player = pi
-                hand.remove(self.STARTING_CARD)
+                hand.remove(STARTING_CARD)
                 break
 
         self.hands = [Counter(hand) for hand in self.hands]
@@ -89,7 +92,7 @@ class Pan:
         # actions = ['take 3'] + ['play 1 x', 'play 3 x', 'play 4 x'] for x in cards
 
         hand = self.hands[self.turn]
-        possible_actions_mask = self.calc_possible_actions_mask(hand)
+        possible_actions_mask = calc_possible_actions_mask(self.state()[1])
         if possible_actions_mask[action] is False:
             print('cant do', self.state())
             print('cant do', hand)
@@ -105,7 +108,7 @@ class Pan:
                 hand += Counter(picked_cards)
             else:
                 card_idx, nr_idx = (action-1)//3, (action-1)%3
-                card = self.CARDS[card_idx]
+                card = CARDS[card_idx]
                 nr = [1, 3, 4][nr_idx]
 
                 hand[card] -= nr
@@ -130,7 +133,7 @@ class Pan:
         if self.turns_played > MAX_TURNS:
             return 'R'
 
-        possible_actions_mask = self.calc_possible_actions_mask(hand)
+        #possible_actions_mask = self.calc_possible_actions_mask(hand)
 
         # game_state = p1 hand counters + stack counters [+ p2 stack counters]
         rest = self._hand_to_tuple(next_hand)
@@ -142,27 +145,13 @@ class Pan:
         # print(state)
         # print(sum(state))
         assert sum(state) == 23
-        return self.turn, state, possible_actions_mask
-
-    def calc_possible_actions_mask(self, hand):
-        hand_counter = Counter(hand)
-
-        # actions = ['take 3'] + ['play 1 x', 'play 3 x', 'play 4 x'] for x in cards
-        possible_actions_mask = []
-        possible_actions_mask.append(len(self.stack) > 0)
-        last_on_stack = self.values[self.stack[-1]] if len(self.stack) > 0 else 1
-        for card in self.CARDS:
-            l = hand_counter[card]
-            possible_actions_mask.append(l >= 1 and self.values[card] >= last_on_stack)
-            possible_actions_mask.append(l >= 3 and self.values[card] >= last_on_stack)
-            possible_actions_mask.append(l >= 4 and self.values[card] >= last_on_stack)
-        return tuple(possible_actions_mask)
+        return self.turn, state, self.turns_played
 
     def _hand_to_tuple(self, hand):
         sorted_hand = []
         ph = Counter(hand)
 
-        for card in self.CARDS:
+        for card in CARDS:
             l = ph[card]
             sorted_hand.append(l)
         return tuple(sorted_hand)
@@ -184,14 +173,12 @@ class Pan:
 
         if self.remaining_players <= 1:
             raise RuntimeError  # shouldnt be here
-            return 'T'
 
         while sum(self.hands[next_turn].values()) == 0:
             next_turn = self.rotate_next(next_turn)
         if next_turn == last_turn:
             print('wow, the seccond if ends the game')
             raise RuntimeError  # shouldnt be here
-            return 'T'
         self._turn = next_turn
 
     def close(self):

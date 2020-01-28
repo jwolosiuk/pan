@@ -2,6 +2,7 @@ import numpy as np
 
 import thegame
 import agents
+from agents.utils import calc_possible_actions_mask
 
 class SimpleMCTSAgent:
     """
@@ -14,7 +15,7 @@ class SimpleMCTSAgent:
 
     def move(self, state):
         me_turn = state[0]
-        pos = state[-1]
+        pos = calc_possible_actions_mask(state[1])
         moves = [i for i, v in enumerate(pos) if v is True]
         wins = [0 for i in range(len(moves))]
         nr_of_moves = [np.inf for i in range(len(moves))]

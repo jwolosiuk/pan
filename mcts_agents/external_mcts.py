@@ -73,7 +73,7 @@ FA = FlowAgent()
 def flowPolicy(state):
     while not state.isTerminal():
         try:
-            action = FA.move(state)
+            action = FA.move(state.tup_state)
         except IndexError:
             raise Exception("Non-terminal state has no possible actions: " + str(state))
         state = state.takeAction(action)
@@ -84,7 +84,7 @@ class MCTSAgentFlow:
         MCTS agent with time limit
     """
     def __init__(self, time_limit=1000):
-        self.mcts = mcts(timeLimit=time_limit, rolloutPolicy=flowPolicy)
+        self.mcts = mcts(timeLimit=time_limit)#, rolloutPolicy=flowPolicy)
 
     def move(self, state):
         initialState = State(state, me=state[0])

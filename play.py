@@ -7,9 +7,9 @@ NR_OF_PLAYERS = 2
 pan = Pan(nr_of_players=NR_OF_PLAYERS)
 state = pan.restart()
 
-#players = [MCTSAgent(time_limit=1000), MCTSAgent(time_limit=10000)]
+#players = [MCTSAgent(time_limit=1000), HumanAgent()]
 #pan.play(players, debug=True)
-
+#exit()
 
 #state = pan.start_from_state((0, (0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 4, 4, 4, 4), (False, False, False, False, True, False, False, False, False, False, False, False, False, False, False, False, False, False, False)))
 #print(state)
@@ -56,7 +56,3 @@ for i1 in range(nr):
               'times when it was P2 and tied', ties[i1][i2], ties[i2][i1], 'times')
         print(p1.__name__, 'won with', p2.__name__, (p1w[i1][i2]+ p2w[i2][i1])/ N, 'lost', (p1w[i2][i1]+ p2w[i1][i2])/ N,
               'tied', (ties[i1][i2]+ties[i2][i1])/N, 'times')
-
-"""
-Some statistics, if being p1 or p2 makes difference? It shouldnt, as starting player and everything else is randomized.
-"""

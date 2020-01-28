@@ -16,10 +16,12 @@ class HashIncrementer(defaultdict):
 class QLearningAgent():
     NR_OF_MOVES = 19
 
-    def __init__(self, lr=0.01, gamma=0.95, name='agent'):
+    def __init__(self, lr=0.1, gamma=0.95, name='agent'):
         self.lr = lr
         self.gamma = gamma
-        self.Q = np.zeros((10000000, self.NR_OF_MOVES)) + 0.1 # len(obs),len(acts)
+        self.Q = np.zeros((10000000, self.NR_OF_MOVES)) + 0.001 # len(obs),len(acts)
+        self.Q[0] = 0
+        self.Q[1] = 0
         self.situations_learned = 0
         self.states_map = HashIncrementer(start_from=2)
         self.name = name
@@ -30,13 +32,13 @@ class QLearningAgent():
         pickle.dump(self.states_map, open(filename + "_states_map.p", "wb"))
 
     def load(self, filename):
-        self.Q = np.load(filename, allow_pickle=True)
+        self.Q = np.load(filename+'.npy', allow_pickle=True)
         self.states_map = pickle.load(open(filename + "_states_map.p", "rb"))
 
     def learn_and_move(self, last_state, last_action, got_reward, new_state):  # with exploration
         self.learn(last_state, last_action, got_reward, new_state)
 
-        exploration = np.random.rand() < 0.1
+        exploration = np.random.rand() < 0.01
         if not exploration:
             next_action = self.move(new_state)
         else:
@@ -49,12 +51,17 @@ class QLearningAgent():
         a = action
         r = reward
         s1 = self._simplify_state(new_state)
-        self.Q[s, a] = self.Q[s, a] + self.lr * (r + self.gamma * np.max(self.Q[s1]) - self.Q[s, a])
+        if type(new_state) is not tuple:
+            masked = [0]
+        else:
+            pos_mask = calc_possible_actions_mask(new_state[1])
+            masked = masked_array(self.Q[s1], mask=~np.array(pos_mask))
+        self.Q[s, a] = self.Q[s, a] + self.lr * (r + self.gamma * np.max(masked) - self.Q[s, a])
         self.situations_learned += 1
 
     def move(self, state):  # greedy
         s = self._simplify_state(state)
-        # print(s)
+        #print(s)
         pos_mask = calc_possible_actions_mask(state[1])
         #print(self.Q[s])
         #print(pos_mask)

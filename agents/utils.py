@@ -2,9 +2,10 @@ from collections import Counter
 
 from thegame import CARDS, VALUES
 
-def human_readable_game_state(turn, state):
+def human_readable_game_state(player, state, turns_played):
+    print((player,state,turns_played))
     possible = calc_possible_actions_mask(state)
-    print("Turn of Player", turn)
+    print("Turn of Player", player, ". Played turns: ", turns_played)
     my_hand = state[:6]
     stack = state[6:12]
     rest = state[12:]
